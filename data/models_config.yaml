@@ -1,0 +1,10 @@
+- key: ollama-qwen2.5-coder
+  provider: ollama
+  model_id: qwen2.5-coder:7b
+  display_name: Qwen 2.5 Coder 7B (Ollama, local)
+  context_window: 32768
+- key: ollama-gemma4
+  provider: ollama
+  model_id: gemma4:latest
+  display_name: Gemma 4 (Ollama, local)
+  context_window: 8192

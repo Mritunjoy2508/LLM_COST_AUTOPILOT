@@ -1,0 +1,10 @@
+{
+  "ollama-qwen2.5-coder": {
+    "quality_tier": "medium",
+    "verbosity_factor": 0.3
+  },
+  "ollama-gemma4": {
+    "quality_tier": "low",
+    "verbosity_factor": 0.3
+  }
+}
