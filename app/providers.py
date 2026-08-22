@@ -5,6 +5,9 @@ import time
 from dataclasses import dataclass
 
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from .models import ModelConfig, Provider
 
@@ -95,9 +98,9 @@ def _call_huggingface(
     temperature: float,
     max_tokens: int,
 ) -> Response:
-    api_key = os.environ.get("HF_API_TOKEN")
+    api_key = os.environ.get("HF_API_TOKEN") or os.environ.get("HF_API_KEY")
     if not api_key:
-        raise ProviderError("HF_API_TOKEN not set in environment")
+        raise ProviderError("HF_API_TOKEN or HF_API_KEY not set in environment")
 
     start = time.perf_counter()
     try:
@@ -151,68 +154,9 @@ def _call_huggingface(
     )
 
 
-def _call_ollama(
-    model: ModelConfig,
-    prompt: str,
-    temperature: float,
-    max_tokens: int,
-) -> Response:
-    base_url = os.environ.get(
-        "OLLAMA_BASE_URL",
-        "http://localhost:11434",
-    )
-
-    start = time.perf_counter()
-    try:
-        resp = httpx.post(
-            f"{base_url}/api/generate",
-            json={
-                "model": model.model_id,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
-                },
-            },
-            timeout=120.0,
-        )
-    except httpx.HTTPError as exc:
-        raise ProviderError(f"Ollama request failed: {exc}") from exc
-
-    latency = time.perf_counter() - start
-
-    if resp.status_code != 200:
-        raise ProviderError(f"Ollama error {resp.status_code}: {resp.text}")
-
-    data = resp.json()
-    text = data.get("response", "")
-
-    input_tokens = data.get(
-        "prompt_eval_count",
-        _approx_token_count(prompt),
-    )
-    output_tokens = data.get(
-        "eval_count",
-        _approx_token_count(text),
-    )
-
-    return Response(
-        text=text,
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        latency_seconds=latency,
-        model_key=model.model_id,
-        provider=Provider.OLLAMA,
-        cost_usd=0.0,
-        raw=data,
-    )
-
-
 _DISPATCH = {
     Provider.GROQ: _call_groq,
     Provider.HUGGINGFACE: _call_huggingface,
-    Provider.OLLAMA: _call_ollama,
 }
 
 
